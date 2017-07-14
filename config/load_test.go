@@ -822,6 +822,30 @@ func TestLoad(t *testing.T) {
 			err:  errors.New("cert source requires proto 'https' or 'tcp'"),
 		},
 		{
+			desc: "-auth with type",
+			args: []string{"-auth", ";file=/path/to/config"},
+			cfg:  func(cfg *Config) *Config { return nil },
+			err:  errors.New("auth type required"),
+		},
+		{
+			desc: "-auth with type and empty config file",
+			args: []string{"-auth", "jwt;file="},
+			cfg:  func(cfg *Config) *Config { return nil },
+			err:  errors.New("auth config file required"),
+		},
+		{
+			desc: "-auth with type and missing file param",
+			args: []string{"-auth", "jwt;"},
+			cfg:  func(cfg *Config) *Config { return nil },
+			err:  errInvalidConfig,
+		},
+		{
+			desc: "-auth with too many args",
+			args: []string{"-auth", "jwt;file=foo;extra=bar"},
+			cfg:  func(cfg *Config) *Config { return nil },
+			err:  errInvalidConfig,
+		},
+		{
 			args: []string{"-cfg"},
 			cfg:  func(cfg *Config) *Config { return nil },
 			err:  errInvalidConfig,

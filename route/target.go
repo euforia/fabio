@@ -42,4 +42,8 @@ type Target struct {
 
 	// timerName is the name of the timer in the metrics registry
 	timerName string
+
+	// AuthEnabled indicates whether the target has authentication/authorization
+	// enabled
+	AuthEnabled bool
 }

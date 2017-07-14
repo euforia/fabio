@@ -174,6 +174,7 @@ func load(cmdline, environ, envprefix []string, props *properties.Properties) (c
 	f.StringVar(&cfg.UI.Title, "ui.title", defaultConfig.UI.Title, "optional title for the UI")
 	f.StringVar(&cfg.ProfileMode, "profile.mode", defaultConfig.ProfileMode, "enable profiling mode, one of [cpu, mem, mutex, block]")
 	f.StringVar(&cfg.ProfilePath, "profile.path", defaultConfig.ProfilePath, "path to profile dump file")
+	f.StringVar(&cfg.Auth.ConfigFile, "auth", defaultConfig.Auth.ConfigFile, "path to auth config, disabled if empty [jwt;file=/path/to/config]")
 
 	// deprecated flags
 	var proxyLogRoutes string
@@ -183,9 +184,15 @@ func load(cmdline, environ, envprefix []string, props *properties.Properties) (c
 	f.StringVar(&awsApiGWCertCN, "aws.apigw.cert.cn", "", "deprecated. use caupgcn=<CN> for cert source")
 
 	// parse configuration
-	if err := f.ParseFlags(cmdline[1:], environ, envprefix, props); err != nil {
+	if err = f.ParseFlags(cmdline[1:], environ, envprefix, props); err != nil {
 		return nil, err
 	}
+
+	auth, err := parseAuth(cfg.Auth.ConfigFile)
+	if err != nil {
+		return nil, err
+	}
+	cfg.Auth = auth
 
 	// post configuration
 	if cfg.Runtime.GOMAXPROCS == -1 {
@@ -274,6 +281,44 @@ func parseScheme(s string) (scheme, addr string) {
 	if n := strings.Index(addr, "/"); n >= 0 {
 		addr = addr[:n]
 	}
+	return
+}
+
+func parseAuth(opt string) (auth Auth, err error) {
+	cfgs := strings.TrimSpace(opt)
+	if cfgs == "" {
+		return
+	}
+
+	parts := strings.Split(cfgs, ";")
+	if len(parts) != 2 {
+		err = errInvalidConfig
+		return
+	}
+
+	auth.Type = strings.TrimSpace(parts[0])
+
+	var kvs []map[string]string
+	if kvs, err = parseKVSlice(parts[1]); err != nil {
+		return
+	}
+	if len(kvs) < 1 || len(kvs[0]) < 1 {
+		err = errInvalidConfig
+		return
+	}
+	auth.ConfigFile = kvs[0]["file"]
+
+	if auth.Type == "" {
+		err = fmt.Errorf("auth type required")
+		return
+	}
+	if auth.ConfigFile == "" {
+		err = fmt.Errorf("auth config file required")
+		return
+	}
+
+	auth.Enabled = true
+
 	return
 }
 

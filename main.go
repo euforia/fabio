@@ -21,6 +21,7 @@ import (
 	"github.com/fabiolb/fabio/cert"
 	"github.com/fabiolb/fabio/config"
 	"github.com/fabiolb/fabio/exit"
+	"github.com/fabiolb/fabio/iam"
 	"github.com/fabiolb/fabio/logger"
 	"github.com/fabiolb/fabio/metrics"
 	"github.com/fabiolb/fabio/proxy"
@@ -141,6 +142,13 @@ func newHTTPProxy(cfg *config.Config) http.Handler {
 		exit.Fatal("[FATAL] Invalid log format: ", err)
 	}
 
+	var aaa iam.IAM
+	if cfg.Auth.Enabled {
+		if aaa, err = iam.New(cfg.Auth); err != nil {
+			exit.Fatal("[FATAL] Failed to initialize auth: ", err)
+		}
+	}
+
 	pick := route.Picker[cfg.Proxy.Strategy]
 	match := route.Matcher[cfg.Proxy.Matcher]
 	notFound := metrics.DefaultRegistry.GetCounter("notfound")
@@ -174,6 +182,7 @@ func newHTTPProxy(cfg *config.Config) http.Handler {
 		Requests: metrics.DefaultRegistry.GetTimer("requests"),
 		Noroute:  metrics.DefaultRegistry.GetCounter("notfound"),
 		Logger:   l,
+		IAM:      aaa,
 	}
 }
 

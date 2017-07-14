@@ -71,4 +71,8 @@ var defaultConfig = &Config{
 		Color:  "light-green",
 		Access: "rw",
 	},
+	Auth: Auth{
+		ConfigFile: "",
+		Type:       "",
+	},
 }

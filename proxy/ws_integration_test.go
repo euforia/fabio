@@ -80,7 +80,7 @@ func TestProxyWSUpstream(t *testing.T) {
 func testWSEcho(t *testing.T, url string, hdr http.Header) {
 	cfg, err := websocket.NewConfig(url, "http://localhost/")
 	if err != nil {
-		t.Fatalf("NewConfig: ", err)
+		t.Fatalf("NewConfig: %v", err)
 	}
 	cfg.Header = hdr
 	if strings.HasPrefix(url, "wss://") {
@@ -93,7 +93,7 @@ func testWSEcho(t *testing.T, url string, hdr http.Header) {
 	defer ws.Close()
 
 	send := []byte("foo")
-	if _, err := ws.Write([]byte("foo")); err != nil {
+	if _, err = ws.Write([]byte("foo")); err != nil {
 		t.Logf("ws.Write failed: %s", err)
 	}
 	recv := make([]byte, 100)

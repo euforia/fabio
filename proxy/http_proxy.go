@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/fabiolb/fabio/config"
+	"github.com/fabiolb/fabio/iam"
 	"github.com/fabiolb/fabio/logger"
 	"github.com/fabiolb/fabio/metrics"
 	"github.com/fabiolb/fabio/proxy/gzip"
@@ -53,6 +54,10 @@ type HTTPProxy struct {
 	// UUID returns a unique id in uuid format.
 	// If UUID is nil, uuid.NewUUID() is used.
 	UUID func() string
+
+	// IAM performs identity and access management for a given request.  It is disabled if set
+	// to nil
+	IAM iam.IAM
 }
 
 func (p *HTTPProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -64,6 +69,22 @@ func (p *HTTPProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if t == nil {
 		w.WriteHeader(p.Config.NoRouteStatus)
 		return
+	}
+
+	// Try to authenticate and authorize if IAM is enabled and the backend application has
+	// auth configured and enabled.
+	if t.AuthEnabled && p.IAM != nil {
+		data, err := p.IAM.Authenticate(r)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		// This may augment the original request with additional data if authorization is
+		// successful.
+		if err := p.IAM.Authorize(r, data); err != nil {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
 	}
 
 	// build the request url since r.URL will get modified

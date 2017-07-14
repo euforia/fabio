@@ -7,6 +7,7 @@ import (
 )
 
 type Config struct {
+	Auth        Auth
 	Proxy       Proxy
 	Registry    Registry
 	Listen      []Listen
@@ -127,4 +128,10 @@ type Consul struct {
 	CheckTimeout       time.Duration
 	CheckScheme        string
 	CheckTLSSkipVerify bool
+}
+
+type Auth struct {
+	Type       string
+	ConfigFile string
+	Enabled    bool
 }
